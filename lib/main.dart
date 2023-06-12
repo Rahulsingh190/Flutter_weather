@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:convert';
+
 
 void main() {
   runApp(const MyApp());
@@ -57,6 +60,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Position? _currentPosition;
+  double? temp;
+
 
   @override
   Widget build(BuildContext context) {
@@ -96,11 +101,11 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
 
-            const Text(
-              'You have pushed the button this many times:',
-            ),
             if (_currentPosition != null) Text(
                 "LAT: ${_currentPosition?.latitude}, LNG: ${_currentPosition?.longitude}"
+            ),
+            if (temp != null) Text(
+                "Temperature: ${temp}"
             ),
             ElevatedButton(
 
@@ -123,9 +128,45 @@ class _MyHomePageState extends State<MyHomePage> {
         .then((Position position) {
       setState(() {
         _currentPosition = position;
+        fetchData(position.latitude, position.longitude);
       });
     }).catchError((e) {
       print(e);
     });
+  }
+
+  void fetchData(double lat, double long) async{
+    var apiKey= "f33e28a79e782ce659418dfa7dc76f3c";
+    var url = "https://api.openweathermap.org/data/2.5/weather";
+    var dio = Dio();
+
+    try {
+      Response response = await dio.get(url, queryParameters: {
+        'lat': lat,
+        'lon': long,
+        'appid': apiKey,
+      });
+
+      if (response.statusCode == 200) {
+        // API call successful
+        var data = response.data;
+
+        print(response.data);
+        var weather = data['weather'][0];
+
+        var main = data['main'];
+        double temperature = main['temp'];
+        print('Temperature: $temperature');
+        temp = temperature;
+
+
+      } else {
+        // API call failed
+        print('API call failed with status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Exception occurred
+      print('Exception: $e');
+    }
   }
 }
